@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Robux Order</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="script.js" defer></script>
+</head>
+<body class="bg-zinc-950 text-white min-h-screen">
+    <div class="max-w-7xl mx-auto p-8">
+        <header class="flex justify-between items-center mb-10">
+            <h1 class="text-4xl font-bold text-cyan-400">ROBUX ORDER <span class="text-xs bg-red-500 px-3 py-1 rounded-full">ADMIN</span></h1>
+            <button onclick="logout()" class="px-6 py-3 bg-red-500/10 text-red-400 rounded-2xl hover:bg-red-500/20">Đăng xuất</button>
+        </header>
+
+        <div class="mb-10">
+            <div class="flex gap-4">
+                <input id="searchOrderId" type="text" placeholder="Nhập ID đơn..." class="flex-1 bg-zinc-900 border border-zinc-700 rounded-2xl px-6 py-4 focus:border-cyan-500">
+                <button onclick="searchOrder()" class="px-10 bg-cyan-500 hover:bg-cyan-600 rounded-2xl font-bold">Tìm</button>
+            </div>
+            <div id="orderResult" class="mt-6 hidden bg-zinc-900 p-8 rounded-3xl"></div>
+        </div>
+
+        <div class="mb-10">
+            <div class="flex gap-4">
+                <input id="searchUsername" type="text" placeholder="Nhập username..." class="flex-1 bg-zinc-900 border border-zinc-700 rounded-2xl px-6 py-4 focus:border-cyan-500">
+                <button onclick="searchMember()" class="px-10 bg-cyan-500 hover:bg-cyan-600 rounded-2xl font-bold">Tìm member</button>
+            </div>
+            <div id="memberResult" class="mt-6 hidden bg-zinc-900 p-8 rounded-3xl"></div>
+        </div>
+
+        <table id="adminTable" class="w-full bg-zinc-900 rounded-3xl overflow-hidden"></table>
+    </div>
+
+    <div id="editModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+        <div class="bg-zinc-900 rounded-3xl p-10 w-full max-w-2xl">
+            <h3 class="text-2xl font-bold mb-6">Chỉnh sửa đơn</h3>
+            <div id="editForm" class="space-y-6"></div>
+            <div class="flex gap-4 mt-8">
+                <button onclick="saveEdit()" class="flex-1 bg-cyan-500 py-4 rounded-2xl font-bold">Lưu</button>
+                <button onclick="closeModal()" class="flex-1 bg-zinc-700 py-4 rounded-2xl font-bold">Hủy</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function renderAdminTable() {
+            const orders = getAllOrders();
+            let html = `<thead><tr class="bg-zinc-800"><th class="px-6 py-5 text-left">ID</th><th>Người tạo</th><th>Người mua</th><th>Roblox</th><th>Mật khẩu</th><th>Số tiền</th><th>Loại</th><th>Trạng thái</th><th>Hành động</th></tr></thead><tbody>`;
+            orders.forEach(o => {
+                const statusMap = { Pending: 'Chờ duyệt', Approved: 'Đã duyệt', Rejected: 'Đã hủy' };
+                const statusText = statusMap[o.status] || o.status;
+                const statusClass = o.status === 'Approved' ? 'bg-green-500' : o.status === 'Rejected' ? 'bg-red-500' : 'bg-yellow-500';
+                html += `<tr class="border-b border-zinc-800 hover:bg-zinc-800/50">
+                    <td class="px-6 py-5 font-mono">${o.id}</td>
+                    <td class="px-6 py-5">${o.createdBy}</td>
+                    <td class="px-6 py-5">${o.buyerName}</td>
+                    <td class="px-6 py-5">${o.robloxUsername}</td>
+                    <td class="px-6 py-5 text-red-400">${o.robloxPassword || '---'}</td>
+                    <td class="px-6 py-5">${Number(o.amount).toLocaleString('vi-VN')}đ</td>
+                    <td class="px-6 py-5">${o.robuxType}</td>
+                    <td class="px-6 py-5"><span class="${statusClass} px-3 py-1 rounded-full text-xs">${statusText}</span></td>
+                    <td class="px-6 py-5 text-center flex gap-2 justify-center">
+                        <button onclick="changeStatus('${o.id}', 'Approved'); renderAdminTable()" class="px-3 py-1 bg-green-500/20 text-green-400 rounded">Đã duyệt</button>
+                        <button onclick="changeStatus('${o.id}', 'Rejected'); renderAdminTable()" class="px-3 py-1 bg-red-500/20 text-red-400 rounded">Đã hủy</button>
+                        <button onclick="editOrder('${o.id}')" class="px-3 py-1 bg-blue-500/20 text-blue-400 rounded">Sửa</button>
+                        <button onclick="if(confirm('Xóa?')) {deleteOrder('${o.id}'); renderAdminTable();}" class="px-3 py-1 bg-zinc-700 text-zinc-300 rounded">Xóa</button>
+                    </td>
+                </tr>`;
+            });
+            html += '</tbody>';
+            document.getElementById('adminTable').innerHTML = html;
+        }
+
+        function searchOrder() {
+            const id = document.getElementById('searchOrderId').value.trim();
+            if (!id) return alert('Nhập ID!');
+            const order = getOrderById(id);
+            const result = document.getElementById('orderResult');
+            if (!order) {
+                result.innerHTML = '<p class="text-red-400">Không tìm thấy!</p>';
+                result.classList.remove('hidden');
+                return;
+            }
+            const statusMap = { Pending: 'Chờ duyệt', Approved: 'Đã duyệt', Rejected: 'Đã hủy' };
+            const statusText = statusMap[order.status] || order.status;
+            const statusClass = order.status === 'Approved' ? 'bg-green-500' : order.status === 'Rejected' ? 'bg-red-500' : 'bg-yellow-500';
+            result.innerHTML = `
+                <h3 class="text-xl font-bold mb-4">Đơn ID: ${order.id}</h3>
+                <p><strong>Người tạo:</strong> ${order.createdBy}</p>
+                <p><strong>Người mua:</strong> ${order.buyerName}</p>
+                <p><strong>Roblox:</strong> ${order.robloxUsername}</p>
+                <p><strong>Mật khẩu Roblox:</strong> <span class="text-red-400">${order.robloxPassword}</span></p>
+                <p><strong>Số tiền:</strong> ${Number(order.amount).toLocaleString('vi-VN')}đ</p>
+                <p><strong>Loại:</strong> ${order.robuxType}</p>
+                <p><strong>Trạng thái:</strong> <span class="${statusClass} px-3 py-1 rounded-full text-xs">${statusText}</span></p>
+                <div class="mt-6 flex gap-4">
+                    <button onclick="changeStatus('${order.id}', 'Approved'); renderAdminTable()" class="px-6 py-3 bg-green-500/20 text-green-400 rounded-xl">Đã duyệt</button>
+                    <button onclick="changeStatus('${order.id}', 'Rejected'); renderAdminTable()" class="px-6 py-3 bg-red-500/20 text-red-400 rounded-xl">Đã hủy</button>
+                    <button onclick="editOrder('${order.id}')" class="px-6 py-3 bg-blue-500/20 text-blue-400 rounded-xl">Sửa</button>
+                    <button onclick="if(confirm('Xóa?')) {deleteOrder('${order.id}'); renderAdminTable();}" class="px-6 py-3 bg-zinc-700 text-zinc-300 rounded-xl">Xóa</button>
+                </div>
+            `;
+            result.classList.remove('hidden');
+        }
+
+        function searchMember() {
+            const username = document.getElementById('searchUsername').value.trim();
+            if (!username) return alert('Nhập username!');
+            const user = findUser(username);
+            const result = document.getElementById('memberResult');
+            if (!user) {
+                result.innerHTML = '<p class="text-red-400">Không tìm thấy!</p>';
+                result.classList.remove('hidden');
+                return;
+            }
+            result.innerHTML = `
+                <h3 class="text-xl font-bold mb-4 text-cyan-400">${user.username}</h3>
+                <p><strong>ID Member:</strong> ${user.username}</p>
+                <p><strong>Loại:</strong> ${user.type || 'Khách thường'}</p>
+                <p><strong>Số đơn:</strong> ${user.orderCount}</p>
+                ${user.role !== 'admin' ? `<button onclick="if(deleteUser('${user.username}')) {alert('Xóa thành công!'); searchMember();}" class="mt-4 px-6 py-3 bg-red-500/20 text-red-400 rounded-xl">Xóa member</button>` : ''}
+            `;
+            result.classList.remove('hidden');
+        }
+
+        let editingId = null;
+        function editOrder(id) {
+            const order = getOrderById(id);
+            if (!order) return alert('Không tìm thấy!');
+            editingId = id;
+            document.getElementById('editForm').innerHTML = `
+                <div class="grid grid-cols-2 gap-6">
+                    <div><label class="block text-sm text-zinc-400 mb-2">Tên người mua</label><input id="editBuyer" value="${order.buyerName}" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-5 py-4"></div>
+                    <div><label class="block text-sm text-zinc-400 mb-2">Roblox Username</label><input id="editRobloxUser" value="${order.robloxUsername}" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-5 py-4"></div>
+                    <div><label class="block text-sm text-zinc-400 mb-2">Mật khẩu Roblox</label><input id="editRobloxPass" value="${order.robloxPassword || ''}" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-5 py-4"></div>
+                    <div><label class="block text-sm text-zinc-400 mb-2">Số tiền</label><input id="editAmount" type="number" value="${order.amount}" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-5 py-4"></div>
+                    <div><label class="block text-sm text-zinc-400 mb-2">Loại Robux</label><select id="editRobuxType" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-5 py-4"><option ${order.robuxType==='120h'?'selected':''}>120h</option><option ${order.robuxType==='Robux VNG'?'selected':''}>Robux VNG</option></select></div>
+                </div>
+                <div class="mt-6"><label class="block text-sm text-zinc-400 mb-2">Ghi chú</label><textarea id="editNote" rows="4" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-5 py-4">${order.note || ''}</textarea></div>
+                <div class="mt-6"><label class="block text-sm text-zinc-400 mb-2">Trạng thái</label><select id="editStatus" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-5 py-4">
+                    <option value="Pending" ${order.status==='Pending'?'selected':''}>Chờ duyệt</option>
+                    <option value="Approved" ${order.status==='Approved'?'selected':''}>Đã duyệt</option>
+                    <option value="Rejected" ${order.status==='Rejected'?'selected':''}>Đã hủy</option>
+                </select></div>
+            `;
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function saveEdit() {
+            if (!editingId) return;
+            const updates = {
+                buyerName: document.getElementById('editBuyer').value.trim(),
+                robloxUsername: document.getElementById('editRobloxUser').value.trim(),
+                robloxPassword: document.getElementById('editRobloxPass').value.trim(),
+                amount: document.getElementById('editAmount').value,
+                robuxType: document.getElementById('editRobuxType').value,
+                note: document.getElementById('editNote').value.trim(),
+                status: document.getElementById('editStatus').value
+            };
+            updateOrder(editingId, updates);
+            closeModal();
+            renderAdminTable();
+            alert('Cập nhật thành công!');
+        }
+
+        function closeModal() { document.getElementById('editModal').classList.add('hidden'); }
+
+        renderAdminTable();
+    </script>
+</body>
+</html>

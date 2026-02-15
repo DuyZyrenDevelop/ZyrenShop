@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Robux Order</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="script.js" defer></script>
+</head>
+<body class="bg-zinc-950 text-white min-h-screen">
+    <div class="max-w-7xl mx-auto">
+        <header class="border-b border-zinc-800 bg-zinc-900">
+            <div class="px-8 py-5 flex justify-between items-center">
+                <h1 class="text-3xl font-bold text-cyan-400">ROBUX ORDER</h1>
+                <p class="text-xl">Số dư: <span id="balance" class="text-green-400 font-bold">0 VNĐ</span></p>
+                <div class="flex items-center gap-6">
+                    <div class="cursor-pointer" onclick="showProfile()">
+                        <img id="userAvatar" src="https://via.placeholder.com/40" alt="Avatar" class="w-10 h-10 rounded-full border-2 border-cyan-500 object-cover">
+                    </div>
+                    <span>Xin chào, <span id="username" class="font-medium"></span></span>
+                    <button onclick="logout()" class="px-6 py-2 bg-red-500/10 text-red-400 rounded-2xl hover:bg-red-500/20">Đăng xuất</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex">
+            <div class="w-72 bg-zinc-900 border-r border-zinc-800 min-h-screen p-6">
+                <div onclick="showCreateForm()" class="cursor-pointer flex items-center gap-3 px-6 py-4 bg-cyan-500 text-black rounded-2xl font-bold mb-3">
+                    ＋ Tạo đơn mới
+                </div>
+                <div onclick="window.location.href='nap-tien.html'" class="cursor-pointer flex items-center gap-3 px-6 py-4 bg-green-500 text-black rounded-2xl font-bold mb-3">
+                    💰 Nạp tiền
+                </div>
+                <div onclick="showMyOrders()" class="cursor-pointer flex items-center gap-3 px-6 py-4 hover:bg-zinc-800 rounded-2xl">Đơn của tôi</div>
+            </div>
+
+            <div class="flex-1 p-8">
+                <div id="createForm">
+                    <h2 class="text-3xl font-bold mb-8">Tạo đơn hàng mới</h2>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div><label class="block text-sm text-zinc-400 mb-2">Tên người mua</label><input id="buyerName" type="text" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-5 py-4 focus:border-cyan-500"></div>
+                        <div><label class="block text-sm text-zinc-400 mb-2">Username Roblox</label><input id="robloxUser" type="text" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-5 py-4 focus:border-cyan-500"></div>
+                        <div><label class="block text-sm text-zinc-400 mb-2">Mật khẩu Roblox</label><input id="robloxPass" type="password" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-5 py-4 focus:border-cyan-500"></div>
+                        <div><label class="block text-sm text-zinc-400 mb-2">Số tiền (VNĐ)</label><input id="amount" type="number" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-5 py-4 focus:border-cyan-500"></div>
+                        <div><label class="block text-sm text-zinc-400 mb-2">Loại Robux</label><select id="robuxType" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-5 py-4 focus:border-cyan-500"><option>120h</option><option>Robux VNG</option></select></div>
+                    </div>
+                    <div class="mt-6"><label class="block text-sm text-zinc-400 mb-2">Ghi chú</label><textarea id="note" rows="4" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-5 py-4"></textarea></div>
+                    <button onclick="submitOrder()" class="mt-10 w-full bg-cyan-500 hover:bg-cyan-600 py-5 rounded-2xl font-bold text-xl">Tạo đơn</button>
+                </div>
+
+                <div id="myOrdersSection" class="hidden">
+                    <h2 class="text-3xl font-bold mb-6">Đơn của tôi</h2>
+                    <div id="myOrdersTable" class="bg-zinc-900 rounded-2xl overflow-hidden"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="profileModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+        <div class="bg-zinc-900 rounded-3xl p-10 w-full max-w-md text-center">
+            <img id="profileAvatar" src="https://via.placeholder.com/120" alt="Avatar" class="w-32 h-32 rounded-full mx-auto mb-6 border-4 border-cyan-500 object-cover">
+            <h3 id="profileUsername" class="text-2xl font-bold mb-2"></h3>
+            <p class="text-zinc-400 mb-4">ID Member: <span id="profileId" class="text-cyan-400 font-mono"></span></p>
+            <p class="text-lg mb-6">Loại tài khoản: <span id="profileType" class="font-bold text-green-400"></span></p>
+            <button onclick="document.getElementById('profileModal').classList.add('hidden')" class="px-8 py-3 bg-zinc-700 rounded-2xl hover:bg-zinc-600">Đóng</button>
+        </div>
+    </div>
+
+    <script>
+        if (!currentUser) window.location.href = 'index.html';
+        document.getElementById('username').textContent = currentUser;
+
+        const user = users[currentUser];
+        if (user.avatar) {
+            document.getElementById('userAvatar').src = user.avatar;
+            document.getElementById('profileAvatar').src = user.avatar;
+        }
+        document.getElementById('profileUsername').textContent = currentUser;
+        document.getElementById('profileId').textContent = currentUser;
+        document.getElementById('profileType').textContent = user.type || 'Khách thường';
+
+        let balance = user.balance || 0;
+        document.getElementById('balance').textContent = Number(balance).toLocaleString('vi-VN') + ' VNĐ';
+
+        function showProfile() {
+            document.getElementById('profileModal').classList.remove('hidden');
+        }
+
+        function showCreateForm() {
+            document.getElementById('createForm').classList.remove('hidden');
+            document.getElementById('myOrdersSection').classList.add('hidden');
+        }
+
+        function showMyOrders() {
+            document.getElementById('createForm').classList.add('hidden');
+            document.getElementById('myOrdersSection').classList.remove('hidden');
+            renderMyOrders();
+        }
+
+        function submitOrder() {
+            const data = {
+                buyerName: document.getElementById('buyerName').value.trim(),
+                robloxUsername: document.getElementById('robloxUser').value.trim(),
+                robloxPassword: document.getElementById('robloxPass').value.trim(),
+                amount: document.getElementById('amount').value,
+                robuxType: document.getElementById('robuxType').value,
+                note: document.getElementById('note').value.trim()
+            };
+            if (!data.buyerName || !data.robloxUsername || !data.robloxPassword || !data.amount) return alert('Điền đầy đủ!');
+            addOrder(data);
+            alert('Tạo đơn thành công!');
+            document.getElementById('buyerName').value = document.getElementById('robloxUser').value = document.getElementById('robloxPass').value = document.getElementById('amount').value = document.getElementById('note').value = '';
+            showMyOrders();
+        }
+
+        function renderMyOrders() {
+            const my = getMyOrders();
+            let html = '<table class="w-full"><thead><tr class="bg-zinc-800"><th class="px-6 py-4 text-left">ID</th><th class="px-6 py-4 text-left">Ngày</th><th class="px-6 py-4 text-left">Người mua</th><th class="px-6 py-4 text-left">Roblox</th><th class="px-6 py-4 text-left">Số tiền</th><th class="px-6 py-4 text-left">Loại</th><th class="px-6 py-4 text-left">Trạng thái</th></tr></thead><tbody>';
+            my.forEach(o => {
+                const date = new Date(o.createdAt).toLocaleDateString('vi-VN');
+                const statusMap = { Pending: 'Chờ duyệt', Approved: 'Đã duyệt', Rejected: 'Đã hủy' };
+                const statusText = statusMap[o.status] || o.status;
+                const statusClass = o.status === 'Approved' ? 'bg-green-500' : o.status === 'Rejected' ? 'bg-red-500' : 'bg-yellow-500';
+                html += `<tr class="border-b border-zinc-800"><td class="px-6 py-4">${o.id}</td><td class="px-6 py-4 text-zinc-400">${date}</td><td class="px-6 py-4">${o.buyerName}</td><td class="px-6 py-4">${o.robloxUsername}</td><td class="px-6 py-4">${Number(o.amount).toLocaleString('vi-VN')}đ</td><td class="px-6 py-4">${o.robuxType}</td><td class="px-6 py-4"><span class="${statusClass} px-3 py-1 rounded-full text-xs">${statusText}</span></td></tr>`;
+            });
+            html += '</tbody></table>';
+            document.getElementById('myOrdersTable').innerHTML = html;
+        }
+
+        showCreateForm();
+    </script>
+</body>
+</html>

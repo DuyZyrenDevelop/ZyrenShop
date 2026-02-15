@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nạp tiền - Robux Order</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="script.js" defer></script>
+</head>
+<body class="bg-zinc-950 text-white min-h-screen">
+    <div class="max-w-7xl mx-auto p-8">
+        <header class="border-b border-zinc-800 bg-zinc-900 mb-10">
+            <div class="px-8 py-5 flex justify-between items-center">
+                <h1 class="text-3xl font-bold text-cyan-400">ROBUX ORDER</h1>
+                <div class="flex items-center gap-6">
+                    <span>Xin chào, <span id="username" class="font-medium"></span></span>
+                    <button onclick="logout()" class="px-6 py-2 bg-red-500/10 text-red-400 rounded-2xl hover:bg-red-500/20">Đăng xuất</button>
+                </div>
+            </div>
+        </header>
+
+        <h2 class="text-4xl font-bold text-center mb-12">NẠP TIỀN</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <!-- Chuyển khoản + Zalo -->
+            <div class="bg-zinc-900 p-8 rounded-3xl">
+                <h3 class="text-2xl font-bold mb-6 text-cyan-400">Chuyển khoản ngân hàng</h3>
+                <div class="space-y-4">
+                    <p><strong>SĐT Zalo liên hệ:</strong> <span class="text-green-400 font-bold">0966197414</span></p>
+                    <p><strong>Hướng dẫn:</strong> Chuyển khoản theo thông tin, chụp màn hình gửi Zalo 0966197414 để admin duyệt nhanh.</p>
+                    <p><strong>Nội dung CK:</strong> Nạp Robux [Tên đăng nhập của bạn]</p>
+                </div>
+            </div>
+
+            <!-- Nạp thẻ cào -->
+            <div class="bg-zinc-900 p-8 rounded-3xl">
+                <h3 class="text-2xl font-bold mb-6 text-cyan-400">Nạp thẻ cào</h3>
+                <div class="space-y-6">
+                    <p class="text-sm text-zinc-400">Nhập thông tin thẻ, admin sẽ kiểm tra và cộng tiền vào tài khoản.</p>
+
+                    <label class="block text-sm text-zinc-400 mb-2">Loại thẻ</label>
+                    <select id="napCardType" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-5 py-4">
+                        <option>Viettel</option>
+                        <option>Zing</option>
+                        <option>Garena</option>
+                        <option>Mobifone</option>
+                        <option>Vinaphone</option>
+                    </select>
+
+                    <label class="block text-sm text-zinc-400 mb-2">Mã Serial</label>
+                    <input id="napSerial" type="text" placeholder="Mã Serial thẻ" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-5 py-4">
+
+                    <label class="block text-sm text-zinc-400 mb-2">Mã thẻ</label>
+                    <input id="napCode" type="text" placeholder="Mã thẻ" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-5 py-4">
+
+                    <label class="block text-sm text-zinc-400 mb-2">Số tiền thẻ (VNĐ)</label>
+                    <input id="napCardAmount" type="number" placeholder="Ví dụ: 100000" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-5 py-4">
+
+                    <button onclick="submitCardNap()" class="w-full bg-green-500 hover:bg-green-600 py-5 rounded-2xl font-bold text-xl mt-4">Gửi yêu cầu nạp thẻ</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-12 text-center text-zinc-400">
+            <p>Lưu ý: Sau khi gửi, chờ admin duyệt. Không gửi nhầm thông tin thẻ!</p>
+        </div>
+    </div>
+
+    <script>
+        if (!currentUser) window.location.href = 'index.html';
+        document.getElementById('username').textContent = currentUser;
+
+        function submitCardNap() {
+            const type = document.getElementById('napCardType').value;
+            const serial = document.getElementById('napSerial').value.trim();
+            const code = document.getElementById('napCode').value.trim();
+            const amount = document.getElementById('napCardAmount').value.trim();
+
+            if (!serial || !code || !amount) return alert('Điền đầy đủ thông tin thẻ!');
+
+            alert(`Yêu cầu nạp thẻ ${type} ${amount} VNĐ đã gửi!\nMã Serial: ${serial}\nMã thẻ: ${code}\nAdmin sẽ kiểm tra và duyệt trong 5-30 phút.`);
+            document.getElementById('napSerial').value = '';
+            document.getElementById('napCode').value = '';
+            document.getElementById('napCardAmount').value = '';
+        }
+    </script>
+</body>
+</html>
